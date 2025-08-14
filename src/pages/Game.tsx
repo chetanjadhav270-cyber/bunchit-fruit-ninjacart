@@ -49,7 +49,7 @@ export default function Game() {
       return <LeaderboardForm score={playerData.score} onSubmit={handleFormSubmit} />
     
     case 'leaderboard':
-      return <Leaderboard userScore={playerData.score} userName={playerData.name} />
+      return <Leaderboard userScore={playerData.score} userName={playerData.name} userContact={playerData.contact} />
     
     default:
       return <Instructions onStartGame={handleStartGame} />

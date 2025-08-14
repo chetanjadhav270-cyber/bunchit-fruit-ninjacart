@@ -3,6 +3,8 @@ import { GameButton } from "@/components/ui/game-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { User, Phone } from "lucide-react"
+import { submitPlayerScore } from "@/lib/firestore"
+import { useToast } from "@/hooks/use-toast"
 
 interface LeaderboardFormProps {
   score: number
@@ -13,15 +15,38 @@ export function LeaderboardForm({ score, onSubmit }: LeaderboardFormProps) {
   const [name, setName] = useState("")
   const [contact, setContact] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !contact.trim()) return
 
     setIsSubmitting(true)
-    await new Promise(resolve => setTimeout(resolve, 500)) // Simulate API call
-    onSubmit(name.trim(), contact.trim())
-    setIsSubmitting(false)
+    try {
+      const scoreImproved = await submitPlayerScore(contact.trim(), name.trim(), score)
+      
+      if (scoreImproved) {
+        toast({
+          title: "Score Submitted!",
+          description: "Your score has been added to the leaderboard.",
+        })
+      } else {
+        toast({
+          title: "Score Not Updated",
+          description: "Your previous score was higher. Keep playing to improve!",
+        })
+      }
+      
+      onSubmit(name.trim(), contact.trim())
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit score. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const isValid = name.trim().length > 0 && contact.trim().length >= 10

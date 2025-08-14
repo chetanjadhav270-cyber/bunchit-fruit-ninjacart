@@ -1,60 +1,36 @@
 import { useState, useEffect } from "react"
 import { GameButton } from "@/components/ui/game-button"
 import { Crown, Medal, Award, ExternalLink } from "lucide-react"
-
-interface LeaderboardEntry {
-  id: string
-  name: string
-  score: number
-  rank: number
-  isCurrentUser?: boolean
-}
+import { getLeaderboard, LeaderboardEntry } from "@/lib/firestore"
 
 interface LeaderboardProps {
   userScore: number
   userName: string
+  userContact: string
 }
 
-// Mock leaderboard data - in a real app this would come from a backend
-const generateMockLeaderboard = (userScore: number, userName: string): LeaderboardEntry[] => {
-  const mockPlayers = [
-    { name: "Rajesh Kumar", score: 850 },
-    { name: "Priya Sharma", score: 720 },
-    { name: "Amit Singh", score: 680 },
-    { name: "Sneha Patel", score: 590 },
-    { name: "Vikram Joshi", score: 540 },
-    { name: "Anita Gupta", score: 510 },
-    { name: "Rohit Mehta", score: 480 },
-    { name: "Kavya Reddy", score: 450 },
-  ]
-
-  // Add current user
-  const allPlayers = [...mockPlayers, { name: userName, score: userScore }]
-  
-  // Sort by score
-  allPlayers.sort((a, b) => b.score - a.score)
-  
-  // Add ranks and mark current user
-  return allPlayers.map((player, index) => ({
-    id: index.toString(),
-    name: player.name,
-    score: player.score,
-    rank: index + 1,
-    isCurrentUser: player.name === userName
-  }))
-}
-
-export function Leaderboard({ userScore, userName }: LeaderboardProps) {
+export function Leaderboard({ userScore, userName, userContact }: LeaderboardProps) {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setLeaderboard(generateMockLeaderboard(userScore, userName))
-      setLoading(false)
-    }, 1000)
-  }, [userScore, userName])
+    const fetchLeaderboard = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await getLeaderboard(userContact)
+        setLeaderboard(data)
+      } catch (err) {
+        console.error("Error fetching leaderboard:", err)
+        setError("Failed to load leaderboard. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLeaderboard()
+  }, [userContact])
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -91,6 +67,22 @@ export function Leaderboard({ userScore, userName }: LeaderboardProps) {
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
           <p className="text-muted-foreground">Loading leaderboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen gradient-game-bg flex flex-col items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <GameButton 
+            variant="primary" 
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </GameButton>
         </div>
       </div>
     )
